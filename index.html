@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controllo HM-10 via Bluetooth</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      color: #333;
+    }
+    input, button {
+      font-size: 18px;
+      padding: 10px;
+      margin: 10px;
+    }
+    input {
+      width: 250px;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Controllo Bluetooth HM-10</h1>
+
+  <button onclick="connectBluetooth()">🔌 Connetti al modulo</button><br><br>
+
+  <input type="text" id="inputValue" placeholder="Scrivi un valore da inviare">
+  <button onclick="sendCustomValue()">📤 Invia</button>
+
+  <div id="status"></div>
+
+  <script>
+    let bluetoothDevice;
+    let characteristic;
+
+    async function connectBluetooth() {
+      try {
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [0xffe0] }]
+        });
+
+        const server = await bluetoothDevice.gatt.connect();
+        const service = await server.getPrimaryService(0xffe0);
+        characteristic = await service.getCharacteristic(0xffe1);
+
+        document.getElementById("status").innerText = "✅ Connesso al modulo HM-10";
+
+      } catch (error) {
+        document.getElementById("status").innerText = "❌ Errore nella connessione: " + error;
+        console.error(error);
+      }
+    }
+
+    function sendCustomValue() {
+      if (!characteristic) {
+        alert("⚠️ Devi prima connetterti al modulo!");
+        return;
+      }
+
+      const value = document.getElementById("inputValue").value;
+
+      if (!value) {
+        alert("❗ Inserisci un valore da inviare.");
+        return;
+      }
+
+      const encoder = new TextEncoder();
+      characteristic.writeValue(encoder.encode(value))
+        .then(() => {
+          document.getElementById("status").innerText = "✅ Valore inviato: " + value;
+        })
+        .catch(error => {
+          console.error("Errore nell'invio:", error);
+          document.getElementById("status").innerText = "❌ Errore nell'invio.";
+        });
+    }
+  </script>
+
+</body>
+</html>
